@@ -932,11 +932,14 @@ static void initChromaPhaseTables (void)
 			// Custom monitor simulation.
 			// Trying to find an "ideal" digital convolution instead of analog simulation.
 
-			float CONVB[12] = {0,0,0,0,0,0,0,0,1,4,1,0};
-			float CONVL[12] = {0,0,0,0,0,0,0,1,1,2,1,1};
+			float MXS = GetVideo().GetMoniXSharp() / 100.0f; // convert 0-100 DWORD to 0-1 float
+			MXS = powf(MXS,3) * 20.0f; // convert 0-1 to curve from 0-20
+
+			float CONVB[12] = {0,0,0,0,0,0,0,0,1,4+MXS,1,0};
+			float CONVL[12] = {0,0,0,0,0,0,0,1,1,2+MXS,1,1};
 			float CONVC[12] = {0,0,0,0,0,0,0,1,2,2,2,1};
-			float CONVB_MAG = 6;
-			float CONVL_MAG = 6;
+			float CONVB_MAG = 6+MXS;
+			float CONVL_MAG = 6+MXS;
 			float CONVC_MAG = 8 * 2;
 
 			t = s;
@@ -959,7 +962,6 @@ static void initChromaPhaseTables (void)
 				q = q + (c * sin(phi));
 				phi += RAD_45;
 			}
-			yx = pow(yx,1.0); // gamma curve
 
 			brightness = clampZeroOne( (float)bx );
 			r64 = yx + (I_TO_R * i) + (Q_TO_R * q);
@@ -2136,6 +2138,7 @@ void NTSC_SetVideoStyle(void)
 				g_pFuncUpdateBnWPixel = updatePixelBnWMoniXDoubleScanline;
 				g_pFuncUpdateHuePixel = updatePixelHueMoniXDoubleScanline;
 			}
+			initChromaPhaseTables(); // Sharp setting needs these to rebuild
 			break;
 
 		case VT_MONO_TV:

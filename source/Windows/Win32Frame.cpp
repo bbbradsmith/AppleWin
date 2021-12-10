@@ -555,6 +555,11 @@ void Win32Frame::ApplyVideoModeChange(void)
 	video.Config_Save_Video();
 	video.VideoReinitialize(false);
 
+	if (video.GetVideoType() == VT_COLOR_MONIX) // Sharp setting needs a redraw
+	{
+		VideoRedrawScreen();
+	}
+	else
 	if (g_nAppMode != MODE_LOGO)
 	{
 		if (g_nAppMode == MODE_DEBUG)

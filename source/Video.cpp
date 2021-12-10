@@ -625,6 +625,9 @@ void Video::Config_Load_Video()
 	REGLOAD_DEFAULT(TEXT(REGVALUE_VIDEO_REFRESH_RATE), &dwTmp, (DWORD)VR_60HZ);
 	SetVideoRefreshRate((VideoRefreshRate_e)dwTmp);
 
+	REGLOAD_DEFAULT(TEXT(REGVALUE_VIDEO_MONIX_SHARP), &dwTmp, (DWORD)0);
+	SetMoniXSharp(dwTmp);
+
 	//
 
 	const UINT16* pOldVersion = GetOldAppleWinVersion();
@@ -670,6 +673,7 @@ void Video::Config_Save_Video()
 	REGSAVE(TEXT(REGVALUE_VIDEO_STYLE)     ,g_eVideoStyle);
 	REGSAVE(TEXT(REGVALUE_VIDEO_MONO_COLOR),g_nMonochromeRGB);
 	REGSAVE(TEXT(REGVALUE_VIDEO_REFRESH_RATE), GetVideoRefreshRate());
+	REGSAVE(TEXT(REGVALUE_VIDEO_MONIX_SHARP), GetMoniXSharp());
 }
 
 //===========================================================================
@@ -722,6 +726,16 @@ void Video::SetVideoStyle(VideoStyle_e newVideoStyle)
 bool Video::IsVideoStyle(VideoStyle_e mask)
 {
 	return (g_eVideoStyle & mask) != 0;
+}
+
+DWORD Video::GetMoniXSharp(void)
+{
+	return g_dwMoniXSharp;
+}
+
+void Video::SetMoniXSharp(DWORD v)
+{
+	g_dwMoniXSharp = v;
 }
 
 //===========================================================================

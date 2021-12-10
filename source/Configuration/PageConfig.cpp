@@ -171,7 +171,8 @@ INT_PTR CPageConfig::DlgProcInternal(HWND hWnd, UINT message, WPARAM wparam, LPA
 		break; // WM_COMMAND
 
 	case WM_HSCROLL:
-		CheckRadioButton(hWnd, IDC_AUTHENTIC_SPEED, IDC_CUSTOM_SPEED, IDC_CUSTOM_SPEED);	// FirstButton, LastButton, CheckButton
+		if (LOWORD(wparam) == IDC_SLIDER_CPU_SPEED)
+			CheckRadioButton(hWnd, IDC_AUTHENTIC_SPEED, IDC_CUSTOM_SPEED, IDC_CUSTOM_SPEED);	// FirstButton, LastButton, CheckButton
 		break;
 
 	case WM_INITDIALOG:
@@ -206,6 +207,11 @@ INT_PTR CPageConfig::DlgProcInternal(HWND hWnd, UINT message, WPARAM wparam, LPA
 
 			CheckDlgButton(hWnd, IDC_CHECK_VERTICAL_BLEND, GetVideo().IsVideoStyle(VS_COLOR_VERTICAL_BLEND) ? BST_CHECKED : BST_UNCHECKED);
 			EnableWindow(GetDlgItem(hWnd, IDC_CHECK_VERTICAL_BLEND), (GetVideo().GetVideoType() == VT_COLOR_IDEALIZED) ? TRUE : FALSE);
+
+			SendDlgItemMessage(hWnd,IDC_SLIDER_MONIX_SHARP,TBM_SETRANGE,1,MAKELONG(0,100));
+			SendDlgItemMessage(hWnd,IDC_SLIDER_MONIX_SHARP,TBM_SETPAGESIZE,0,10);
+			SendDlgItemMessage(hWnd,IDC_SLIDER_MONIX_SHARP,TBM_SETTICFREQ,10,0);
+			SendDlgItemMessage(hWnd,IDC_SLIDER_MONIX_SHARP,TBM_SETPOS,1,GetVideo().GetMoniXSharp());
 
 			if (GetCardMgr().IsSSCInstalled())
 			{
@@ -313,6 +319,13 @@ void CPageConfig::DlgOK(HWND hWnd)
 	if (isCurrentVideoRate50Hz != isNewVideoRate50Hz)
 	{
 		m_PropertySheetHelper.GetConfigNew().m_videoRefreshRate = isNewVideoRate50Hz ? VR_50HZ : VR_60HZ;
+	}
+
+	DWORD newMoniXSharp = SendDlgItemMessage(hWnd, IDC_SLIDER_MONIX_SHARP,TBM_GETPOS, 0, 0);
+	if (newMoniXSharp != GetVideo().GetMoniXSharp())
+	{
+		GetVideo().SetMoniXSharp(newMoniXSharp);
+		bVideoReinit = true;
 	}
 
 	m_PropertySheetHelper.GetConfigNew().m_tfeEnabled = m_PageConfigTfe.m_tfe_enabled;

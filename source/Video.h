@@ -194,6 +194,7 @@ public:
 		g_nMonochromeRGB = RGB(0xC0,0xC0,0xC0);
 		g_videoRomSize = 0;
 		g_videoRomRockerSwitch = false;
+		g_dwMoniXSharp = 0;
 	}
 
 	void Initialize(uint8_t* frameBuffer); // Do not call directly. Call FrameBase::Initialize()
@@ -262,6 +263,8 @@ public:
 	VideoStyle_e GetVideoStyle(void);
 	void SetVideoStyle(VideoStyle_e newVideoStyle);
 	bool IsVideoStyle(VideoStyle_e mask);
+	DWORD GetMoniXSharp(void);
+	void SetMoniXSharp(DWORD v);
 
 	VideoRefreshRate_e GetVideoRefreshRate(void);
 	void SetVideoRefreshRate(VideoRefreshRate_e rate);
@@ -286,6 +289,7 @@ private:
 	VideoStyle_e g_eVideoStyle;
 	bool g_bVideoScannerNTSC;	// NTSC video scanning (or PAL)
 	COLORREF g_nMonochromeRGB;	// saved to Registry
+	DWORD g_dwMoniXSharp;		// saved to Registry
 
 	WinBmpHeader_t g_tBmpHeader;
 

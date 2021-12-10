@@ -14,6 +14,7 @@
 #define IDC_CUSTOM_SPEED                110
 #define IDC_SLIDER_CPU_SPEED            111
 #define IDD_PROPPAGE_SOUND              112
+#define IDC_SLIDER_MONIX_SHARP          112
 #define IDC_DISKTYPE                    113
 #define IDC_JOYSTICK1                   115
 #define IDD_PROPPAGE_DISK               116
