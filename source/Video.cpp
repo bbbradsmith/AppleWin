@@ -59,6 +59,7 @@ const char Video::g_aVideoChoices[] =
 	"Monochrome (Amber)\0"
 	"Monochrome (Green)\0"
 	"Monochrome (White)\0"
+	"Color (Monitor X)\0"
 	;
 
 // NOTE: KEEP IN SYNC: VideoType_e g_aVideoChoices g_apVideoModeDesc
@@ -73,6 +74,7 @@ const char Video::m_szModeDesc5[] = "B&W TV";
 const char Video::m_szModeDesc6[] = "Monochrome (Amber)";
 const char Video::m_szModeDesc7[] = "Monochrome (Green)";
 const char Video::m_szModeDesc8[] = "Monochrome (White)";
+const char Video::m_szModeDesc9[] = "Color (Monitor X)";
 
 const char* const Video::g_apVideoModeDesc[NUM_VIDEO_MODES] =
 {
@@ -84,7 +86,8 @@ const char* const Video::g_apVideoModeDesc[NUM_VIDEO_MODES] =
 	Video::m_szModeDesc5,
 	Video::m_szModeDesc6,
 	Video::m_szModeDesc7,
-	Video::m_szModeDesc8
+	Video::m_szModeDesc8,
+	Video::m_szModeDesc9,
 };
 
 //===========================================================================

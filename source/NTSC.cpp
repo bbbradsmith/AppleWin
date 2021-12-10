@@ -139,6 +139,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	static bgra_t   g_aHueMonitor[NTSC_NUM_PHASES][NTSC_NUM_SEQUENCES];
 	static bgra_t   g_aBnwColorTV                 [NTSC_NUM_SEQUENCES];
 	static bgra_t   g_aHueColorTV[NTSC_NUM_PHASES][NTSC_NUM_SEQUENCES];
+	static bgra_t   g_aBnWMoniX                   [NTSC_NUM_SEQUENCES]; // custom monitor rendering
+	static bgra_t   g_aHueMoniX  [NTSC_NUM_PHASES][NTSC_NUM_SEQUENCES];
 
 	// g_aBnWMonitor * g_nMonochromeRGB -> g_aBnWMonitorCustom
 	// g_aBnwColorTV * g_nMonochromeRGB -> g_aBnWColorTVCustom
@@ -331,10 +333,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 	static void updatePixelBnWColorTVDoubleScanline( uint16_t compositeSignal );
 	static void updatePixelBnWMonitorSingleScanline( uint16_t compositeSignal );
 	static void updatePixelBnWMonitorDoubleScanline( uint16_t compositeSignal );
+	static void updatePixelBnWMoniXSingleScanline( uint16_t compositeSignal );
+	static void updatePixelBnWMoniXDoubleScanline( uint16_t compositeSignal );
 	static void updatePixelHueColorTVSingleScanline( uint16_t compositeSignal );
 	static void updatePixelHueColorTVDoubleScanline( uint16_t compositeSignal );
 	static void updatePixelHueMonitorSingleScanline( uint16_t compositeSignal );
 	static void updatePixelHueMonitorDoubleScanline( uint16_t compositeSignal );
+	static void updatePixelHueMoniXSingleScanline( uint16_t compositeSignal );
+	static void updatePixelHueMoniXDoubleScanline( uint16_t compositeSignal );
 
 	static void updateScreenDoubleHires40( long cycles6502 );
 	static void updateScreenDoubleHires80( long cycles6502 );
@@ -722,7 +728,10 @@ inline void updateVideoScannerAddress()
 
 	// Adjust, as these video styles have 2x 14M pixels of pre-render
 	// NB. For VT_COLOR_MONITOR_NTSC, also check color-burst so that TEXT and MIXED(HGR+TEXT) render the TEXT at the same offset (GH#341)
-	if (GetVideo().GetVideoType() == VT_MONO_TV || GetVideo().GetVideoType() == VT_COLOR_TV || (GetVideo().GetVideoType() == VT_COLOR_MONITOR_NTSC && GetColorBurst()))
+	if (GetVideo().GetVideoType() == VT_MONO_TV
+	 || GetVideo().GetVideoType() == VT_COLOR_TV
+	 || (GetVideo().GetVideoType() == VT_COLOR_MONITOR_NTSC && GetColorBurst())
+	 || (GetVideo().GetVideoType() == VT_COLOR_MONIX && GetColorBurst()))
 		g_pVideoAddress -= 2;
 
 	// GH#555: For the 14M video modes (DHGR,DGR,80COL), start rendering 1x 14M pixel early to account for these video modes being shifted right by 1 pixel
@@ -773,13 +782,15 @@ static void initChromaPhaseTables (void)
 	real phi,zz;
 	float brightness;
 	double r64,g64,b64;
-	float  r32,g32,b32;	
+	float  r32,g32,b32;
+	real yx, bx;
 
 	for (phase = 0; phase < 4; ++phase)
 	{
-		phi = (phase * RAD_90) + CYCLESTART;
 		for (s = 0; s < NTSC_NUM_SEQUENCES; ++s)
 		{
+			phi = ((real)phase * RAD_90) + CYCLESTART;
+
 			t = s;
 			y0 = y1 = c = i = q = 0.0;
 
@@ -916,6 +927,57 @@ static void initChromaPhaseTables (void)
 			g_aHueColorTV[phase][s].g = (uint8_t)(g32 * 255);
 			g_aHueColorTV[phase][s].r = (uint8_t)(r32 * 255);
 			g_aHueColorTV[phase][s].a = 255;
+
+			// MoniX
+			// Custom monitor simulation.
+			// Trying to find an "ideal" digital convolution instead of analog simulation.
+
+			float CONVB[12] = {0,0,0,0,0,0,0,0,1,3,1,0};
+			float CONVL[12] = {0,0,0,0,0,0,0,1,1,2,1,1};
+			float CONVC[12] = {0,0,0,0,0,0,0,1,2,2,2,1};
+			float CONVB_MAG = 5;
+			float CONVL_MAG = 6;
+			float CONVC_MAG = 8 * 2;
+
+			t = s;
+			yx = 0;
+			bx = 0;
+			i = 0;
+			q = 0;
+			phi = ((real)phase * RAD_90) + CYCLESTART + RAD_45; // off by 45?
+			for (n = 0; n < 12; ++n)
+			{
+				z = (real)(0 != (t & 0x800));
+				t = t << 1;
+				bx += z * CONVB[n] / CONVB_MAG;
+				yx += z * CONVL[n] / CONVL_MAG;
+				c = z * CONVC[n] / CONVC_MAG;
+				i = i + (c * cos(phi));
+				q = q + (c * sin(phi));
+				phi += RAD_45;
+				i = i + (c * cos(phi));
+				q = q + (c * sin(phi));
+				phi += RAD_45;
+			}
+			yx = pow(yx,1.2); // gamma curve
+
+			brightness = clampZeroOne( (float)bx );
+			r64 = yx + (I_TO_R * i) + (Q_TO_R * q);
+			g64 = yx + (I_TO_G * i) + (Q_TO_G * q);
+			b64 = yx + (I_TO_B * i) + (Q_TO_B * q);
+			b32 = clampZeroOne( (float)b64);
+			g32 = clampZeroOne( (float)g64);
+			r32 = clampZeroOne( (float)r64);
+
+			g_aBnWMoniX[s].b = (uint8_t)(brightness * 255);
+			g_aBnWMoniX[s].g = (uint8_t)(brightness * 255);
+			g_aBnWMoniX[s].r = (uint8_t)(brightness * 255);
+			g_aBnWMoniX[s].a = 255;
+
+			g_aHueMoniX[phase][s].b = (uint8_t)(b32 * 255);
+			g_aHueMoniX[phase][s].g = (uint8_t)(g32 * 255);
+			g_aHueMoniX[phase][s].r = (uint8_t)(r32 * 255);
+			g_aHueMoniX[phase][s].a = 255;
 		}
 	}
 
@@ -1065,6 +1127,20 @@ static void updatePixelBnWMonitorDoubleScanline (uint16_t compositeSignal)
 }
 
 //===========================================================================
+static void updatePixelBnWMoniXSingleScanline (uint16_t compositeSignal)
+{
+	updateFramebufferMonitorSingleScanline(compositeSignal, g_aBnWMoniX);
+	updateColorPhase();	// Maintain color-phase, as could be switching graphics/text video modes mid-scanline
+}
+
+//===========================================================================
+static void updatePixelBnWMoniXDoubleScanline (uint16_t compositeSignal)
+{
+	updateFramebufferMonitorDoubleScanline(compositeSignal, g_aBnWMoniX);
+	updateColorPhase();	// Maintain color-phase, as could be switching graphics/text video modes mid-scanline
+}
+
+//===========================================================================
 static void updatePixelBnWColorTVSingleScanline (uint16_t compositeSignal)
 {
 	updateFramebufferTVSingleScanline(compositeSignal, g_aBnWColorTVCustom);
@@ -1103,6 +1179,20 @@ static void updatePixelHueMonitorSingleScanline (uint16_t compositeSignal)
 static void updatePixelHueMonitorDoubleScanline (uint16_t compositeSignal)
 {
 	updateFramebufferMonitorDoubleScanline(compositeSignal, g_aHueMonitor[g_nColorPhaseNTSC]);
+	updateColorPhase();
+}
+
+//===========================================================================
+static void updatePixelHueMoniXSingleScanline (uint16_t compositeSignal)
+{
+	updateFramebufferMonitorSingleScanline(compositeSignal, g_aHueMoniX[g_nColorPhaseNTSC]);
+	updateColorPhase();
+}
+
+//===========================================================================
+static void updatePixelHueMoniXDoubleScanline (uint16_t compositeSignal)
+{
+	updateFramebufferMonitorDoubleScanline(compositeSignal, g_aHueMoniX[g_nColorPhaseNTSC]);
 	updateColorPhase();
 }
 
@@ -2028,6 +2118,23 @@ void NTSC_SetVideoStyle(void)
 			{
 				g_pFuncUpdateBnWPixel = updatePixelBnWMonitorDoubleScanline;
 				g_pFuncUpdateHuePixel = updatePixelHueMonitorDoubleScanline;
+			}
+			break;
+
+		case VT_COLOR_MONIX:
+			r = 0xFF;
+			g = 0xFF;
+			b = 0xFF;
+			updateMonochromeTables( r, g, b );
+			if (half)
+			{
+				g_pFuncUpdateBnWPixel = updatePixelBnWMoniXSingleScanline;
+				g_pFuncUpdateHuePixel = updatePixelHueMoniXSingleScanline;
+			}
+			else
+			{
+				g_pFuncUpdateBnWPixel = updatePixelBnWMoniXDoubleScanline;
+				g_pFuncUpdateHuePixel = updatePixelHueMoniXDoubleScanline;
 			}
 			break;
 

@@ -26,6 +26,7 @@ enum VideoType_e
 	, VT_MONO_AMBER
 	, VT_MONO_GREEN
 	, VT_MONO_WHITE
+	, VT_COLOR_MONIX            // custom monitor implementation
 	, NUM_VIDEO_MODES
 	, VT_DEFAULT = VT_COLOR_TV
 };
@@ -308,5 +309,6 @@ private:
 	static const char m_szModeDesc6[];
 	static const char m_szModeDesc7[];
 	static const char m_szModeDesc8[];
+	static const char m_szModeDesc9[];
 	static const char* const g_apVideoModeDesc[NUM_VIDEO_MODES];
 };
