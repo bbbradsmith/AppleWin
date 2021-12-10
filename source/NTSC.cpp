@@ -773,13 +773,16 @@ static void initChromaPhaseTables (void)
 	real phi,zz;
 	float brightness;
 	double r64,g64,b64;
-	float  r32,g32,b32;	
+	float  r32,g32,b32;
+	real phix;
 
 	for (phase = 0; phase < 4; ++phase)
 	{
 		phi = (phase * RAD_90) + CYCLESTART;
 		for (s = 0; s < NTSC_NUM_SEQUENCES; ++s)
 		{
+			while(phi >= RAD_360) phi -= RAD_360;
+
 			t = s;
 			y0 = y1 = c = i = q = 0.0;
 
@@ -815,6 +818,39 @@ static void initChromaPhaseTables (void)
 			g_aBnwColorTV[s].g = (uint8_t)(brightness * 255);
 			g_aBnwColorTV[s].r = (uint8_t)(brightness * 255);
 			g_aBnwColorTV[s].a = 255;
+
+			// HACK replace y0 filter with 11211 convolution?
+			t = s;
+			y0 = 0;
+			i = 0;
+			q = 0;
+			float CONVL[12] = {0,0,0,0,0,0,0,1,1,2,1,1};
+			float CONVL_MAG = 6;
+			float CONVC[12] = {0,0,0,0,0,0,0,1,2,2,2,1};
+			float CONVC_MAG = 8 * 2;
+			phix = phi + RAD_45; // why is it off by 45?
+			for (n = 0; n < 12; ++n)
+			{
+				z = (real)(0 != (t & 0x800));
+				t = t << 1;
+				y0 += z * CONVL[n] / CONVL_MAG;
+				c = z * CONVC[n] / CONVC_MAG;
+				//i = i + (c * cos(phix) - i) / 8.f;
+				//q = q + (c * sin(phix) - q) / 8.f;
+				//phix += RAD_45;
+				//i = i + (c * cos(phix) - i) / 8.f;
+				//q = q + (c * sin(phix) - q) / 8.f;
+				//phix += RAD_45;
+				i = i + (c * cos(phix));
+				q = q + (c * sin(phix));
+				phix += RAD_45;
+				i = i + (c * cos(phix));
+				q = q + (c * sin(phix));
+				phix += RAD_45;
+			}
+			// helps sharpen the edges
+			//if (y0 < 0.5) y0 *= y0;
+			if (y0 < 0.5) y0 = 0;
 			
 			/*
 				YI'V' to RGB
