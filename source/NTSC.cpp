@@ -932,10 +932,10 @@ static void initChromaPhaseTables (void)
 			// Custom monitor simulation.
 			// Trying to find an "ideal" digital convolution instead of analog simulation.
 
-			float CONVB[12] = {0,0,0,0,0,0,0,0,1,3,1,0};
+			float CONVB[12] = {0,0,0,0,0,0,0,0,1,4,1,0};
 			float CONVL[12] = {0,0,0,0,0,0,0,1,1,2,1,1};
 			float CONVC[12] = {0,0,0,0,0,0,0,1,2,2,2,1};
-			float CONVB_MAG = 5;
+			float CONVB_MAG = 6;
 			float CONVL_MAG = 6;
 			float CONVC_MAG = 8 * 2;
 
@@ -959,7 +959,7 @@ static void initChromaPhaseTables (void)
 				q = q + (c * sin(phi));
 				phi += RAD_45;
 			}
-			yx = pow(yx,1.2); // gamma curve
+			yx = pow(yx,1.0); // gamma curve
 
 			brightness = clampZeroOne( (float)bx );
 			r64 = yx + (I_TO_R * i) + (Q_TO_R * q);
